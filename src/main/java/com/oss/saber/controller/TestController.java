@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
     @GetMapping("/api/test")
     public String test() {
-        return "test";
+        return "연결 성공";
     }
 }
