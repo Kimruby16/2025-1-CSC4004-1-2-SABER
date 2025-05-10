@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface VerificationLinkRepository extends JpaRepository<VerificationLink, Long> {
     Optional<VerificationLink> findByLinkToken(UUID linkToken);
+    Optional<VerificationLink> findById(Long verificationLinkId);
 }
