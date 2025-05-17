@@ -7,7 +7,7 @@ public class DefaultVerificationMapper {
 
     public static DefaultVerificationResponse toResponse(DefaultVerification verification) {
         return DefaultVerificationResponse.builder()
-                .verificationLabel(verification.getContent())
+                .verificationContent(verification.getContent())
                 .build();
     }
 }

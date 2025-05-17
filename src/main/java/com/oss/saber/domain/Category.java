@@ -20,6 +20,7 @@ public class Category {
     private String name;
 
     @ManyToMany
+    @Builder.Default
     @JoinTable(
             name = "category_default_verifications",
             joinColumns = @JoinColumn(name = "category_id"),

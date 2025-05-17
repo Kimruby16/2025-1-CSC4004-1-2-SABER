@@ -16,6 +16,7 @@ import java.util.UUID;
 public class VerificationLink {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter
     private Long id;
 
     @Column(name = "link_token", nullable = false, unique = true)
@@ -62,17 +63,20 @@ public class VerificationLink {
     @Setter
     private String firstVisitorKey;
 
+    @Builder.Default
     @OneToMany(mappedBy = "verificationLink", cascade = CascadeType.ALL)
     private List<Verification> verifications = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "verificationLink", cascade = CascadeType.ALL)
     private List<Retry> retries = new ArrayList<>();
 
+    @Builder.Default
     @OneToMany(mappedBy = "verificationLink", cascade = CascadeType.ALL)
     private List<AnomalyLog> anomalyLogs = new ArrayList<>();
 
     public void addVerification(Verification verification) {
-        this.verifications.add(verification);
+        verifications.add(verification);
         verification.setVerificationLink(this); // 양방향 연관관계 유지
     }
 }

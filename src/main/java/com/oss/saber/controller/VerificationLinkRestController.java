@@ -27,9 +27,9 @@ public class VerificationLinkRestController {
 
     @PostMapping("/verification/settings/category")
     @Operation(summary = "카테고리 선택", description = "품목의 카테고리를 선택합니다.")
-    public ResponseEntity<String> selectCategory(@RequestBody CategorySettingRequest request) {
-        verificationLinkService.createLink(request.getCategoryId());
-        return ResponseEntity.ok("카테고리 설정 완료");
+    public ResponseEntity<Long> selectCategory(@RequestBody CategorySettingRequest request) {
+        VerificationLink link = verificationLinkService.createLink(request.getCategoryId());
+        return ResponseEntity.ok(link.getId());
     }
 
     @PostMapping("/verification/{verificationId}/settings")
