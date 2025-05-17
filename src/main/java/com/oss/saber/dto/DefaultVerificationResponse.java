@@ -10,5 +10,5 @@ import java.util.List;
 @Setter
 @Builder
 public class DefaultVerificationResponse {
-    private String verificationLabel;
+    private String verificationContent;
 }
