@@ -8,4 +8,6 @@ import lombok.Setter;
 @Builder
 public class CategorySettingRequest {
     private Long categoryId;
+
+    private String productName;
 }

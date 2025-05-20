@@ -1,17 +1,16 @@
 package com.oss.saber.service;
 
 import com.oss.saber.domain.*;
-import com.oss.saber.dto.VerificationLinkResponse;
-import com.oss.saber.dto.VerificationLinkSettingRequest;
+import com.oss.saber.dto.*;
 import com.oss.saber.repository.CategoryRepository;
 import com.oss.saber.repository.VerificationLinkRepository;
 import com.oss.saber.repository.VerificationRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.oss.saber.domain.VerificationResult.PENDING;
@@ -23,11 +22,12 @@ public class VerificationLinkService {
     private final CategoryRepository categoryRepository;
     private final VerificationRepository verificationRepository;
 
-    public VerificationLink createLink(Long categoryId) {
-        Category category = categoryRepository.findById(categoryId)
+    public VerificationLink createLink(CategorySettingRequest request) {
+        Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
 
         VerificationLink link = VerificationLink.builder()
+                .productName(request.getProductName())
                 .linkToken(UUID.randomUUID())
                 .createdAt(LocalDateTime.now())
                 .status(VerificationLinkStatus.PENDING)
@@ -137,4 +137,56 @@ public class VerificationLinkService {
         verificationLink.setStatus(status);
         verificationLinkRepository.save(verificationLink);
     }
+
+    //----------------------------------------------------------------------------------
+
+    public VerificationLink initVerification(UUID token) {
+        VerificationLink link = verificationLinkRepository.findByLinkToken(token)
+                .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 인증 링크입니다."));
+
+        if (isExpiredOrCompleted(link.getStatus())) {
+            throw new IllegalStateException("이미 만료되었거나 완료된 인증입니다.");
+        }
+
+        if (link.getFirstAccessedAt() == null) {
+            link.setFirstAccessedAt(LocalDateTime.now());
+        }
+
+        link.setStatus(VerificationLinkStatus.IN_PROGRESS);
+        verificationLinkRepository.save(link);
+
+        return link;
+    }
+
+    public void agreeTerms(Long linkId) {
+        VerificationLink link = getLink(linkId);
+        if (link.getTermsAgreedAt() == null) {
+            link.setTermsAgreedAt(LocalDateTime.now());
+        }
+        if (link.getPermissionsAgreedAt() == null) {
+            link.setPermissionsAgreedAt(LocalDateTime.now());
+        }
+        verificationLinkRepository.save(link);
+    }
+
+    public void markTimeout(Long linkId) {
+        VerificationLink link = getLink(linkId);
+        link.setStatus(VerificationLinkStatus.TERMINATED);
+        link.setTerminatedAt(LocalDateTime.now());
+        link.setTerminatedReason(TerminatedReason.TIMEOUT);
+        verificationLinkRepository.save(link);
+    }
+
+    private boolean isExpiredOrCompleted(VerificationLinkStatus status) {
+        return switch (status) {
+            case EXPIRED, COMPLETED, IN_PROGRESS, TERMINATED-> true;
+            default -> false;
+        };
+    }
+
+    private VerificationLink getLink(Long id) {
+        return verificationLinkRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("인증 링크를 찾을 수 없습니다."));
+    }
+
 }
