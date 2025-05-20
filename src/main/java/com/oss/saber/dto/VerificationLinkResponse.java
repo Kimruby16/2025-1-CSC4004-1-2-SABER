@@ -1,18 +1,47 @@
 package com.oss.saber.dto;
 
 import com.oss.saber.domain.VerificationLinkStatus;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.List;
 
-@Builder
-@Setter
-@Getter
+
 public class VerificationLinkResponse {
-    private String link;
-    private LocalDateTime expiresAt;
-    private VerificationLinkStatus status;
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class toResponse{
+        Long id;
+        String productName;
+        String requirementText;
+        String additionalText;
+        List<VerificationResponse.infoResponse> verifications;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LinkResponse {
+        String link;
+        LocalDateTime expiresAt;
+        VerificationLinkStatus status;
+    }
+
+    @Builder
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VerificationLinkSession{
+        Long id;
+        VerificationLinkStatus status;
+        String productName;
+        LocalDateTime expiresAt;
+    }
 }

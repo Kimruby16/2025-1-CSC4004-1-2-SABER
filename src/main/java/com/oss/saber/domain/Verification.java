@@ -1,10 +1,7 @@
 package com.oss.saber.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -12,6 +9,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
 @Table(name = "verifications")
 public class Verification {
     @Id
@@ -25,15 +23,25 @@ public class Verification {
     @Setter
     private VerificationLink verificationLink;
 
+    @Setter
     private LocalDateTime submittedAt;
 
     @Enumerated(EnumType.STRING)
+    @Setter
     private VerificationResult result;
 
+    @Setter
     private String comment;
 
+    @Setter
     private String videoUrl;
-    private String imageUrl;
 
+    @Setter
+    private String imageUrl;
+    
     private int reVerificationCount;
+
+    public void addReVerification() {
+        reVerificationCount++;
+    }
 }

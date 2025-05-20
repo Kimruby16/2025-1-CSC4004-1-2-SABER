@@ -12,15 +12,16 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Getter
 @Table(name = "verification_links")
 public class VerificationLink {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter
     private Long id;
 
+    private String productName;
+
     @Column(name = "link_token", nullable = false, unique = true)
-    @Getter
     private UUID linkToken;
 
     @Setter
@@ -30,7 +31,6 @@ public class VerificationLink {
 
     @Enumerated(EnumType.STRING)
     @Setter
-    @Getter
     private VerificationLinkStatus status;
 
     private LocalDateTime createdAt;
@@ -52,6 +52,7 @@ public class VerificationLink {
 
     @Enumerated(EnumType.STRING)
     @Setter
+    @Getter
     private TerminatedReason terminatedReason;
 
     @Setter
