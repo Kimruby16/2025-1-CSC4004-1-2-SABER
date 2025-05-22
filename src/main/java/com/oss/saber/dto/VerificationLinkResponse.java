@@ -43,5 +43,8 @@ public class VerificationLinkResponse {
         VerificationLinkStatus status;
         String productName;
         LocalDateTime expiresAt;
+        String requirementText;
+        String additionalText;
+        List<VerificationResponse.infoResponse> verifications;
     }
 }

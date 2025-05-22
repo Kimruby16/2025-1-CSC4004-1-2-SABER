@@ -8,6 +8,7 @@ public class VerificationLinkStatusMapper {
     public static VerificationLinkStatusResponse toResponse(VerificationLink verificationLink) {
         return VerificationLinkStatusResponse.builder()
                 .status(verificationLink.getStatus())
+                .startedAt(verificationLink.getStartedAt())
                 .build();
     }
 }
