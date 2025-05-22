@@ -11,4 +11,6 @@ public interface VerificationLinkRepository extends JpaRepository<VerificationLi
     Optional<VerificationLink> findByLinkToken(UUID linkToken);
 
     Optional<VerificationLink> findById(Long verificationLinkId);
+
+    Optional<VerificationLink> findByIdAndFirstVisitorKey(Long id, String visitorKey);
 }

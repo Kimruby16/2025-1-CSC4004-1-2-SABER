@@ -1,5 +1,6 @@
 package com.oss.saber.service;
 
+import com.oss.saber.config.TokenProvider;
 import com.oss.saber.domain.*;
 import com.oss.saber.dto.*;
 import com.oss.saber.repository.CategoryRepository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.oss.saber.domain.VerificationResult.PENDING;
@@ -20,7 +22,7 @@ import static com.oss.saber.domain.VerificationResult.PENDING;
 public class VerificationLinkService {
     private final VerificationLinkRepository verificationLinkRepository;
     private final CategoryRepository categoryRepository;
-    private final VerificationRepository verificationRepository;
+    private final TokenProvider tokenProvider;
 
     public VerificationLink createLink(CategorySettingRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -33,6 +35,7 @@ public class VerificationLinkService {
                 .status(VerificationLinkStatus.PENDING)
                 .termsAgreedAt(LocalDateTime.now())
                 .permissionsAgreedAt(LocalDateTime.now())
+                .expiresAt(LocalDateTime.now().plusDays(1))
                 .build();
 
         for (DefaultVerification defaultVerification : category.getDefaultVerifications()) {
@@ -50,10 +53,7 @@ public class VerificationLinkService {
         VerificationLink verificationLink = verificationLinkRepository.findById(verificationLinkId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 인증 링크가 존재하지 않습니다."));
 
-        // 제한 시간 설정
-        verificationLink.setExpiresAt(LocalDateTime.now().plusMinutes(request.getLimitedMinutes()));
-
-        // 사용자 지정 요청 저장
+        verificationLink.setTerminatedAt(LocalDateTime.now().plusMinutes(request.getLimitedMinutes()));
         verificationLink.setRequirementText(request.getCustomRequests());
 
         // 인증 방식 설정
@@ -138,21 +138,45 @@ public class VerificationLinkService {
         verificationLinkRepository.save(verificationLink);
     }
 
+    public VerificationLink createLinkWithVisitorKey(CategorySettingRequest request, String visitorKey) {
+        VerificationLink link = createLink(request); // 기존 createLink() 로직 재활용
+        link.setFirstVisitorKey(visitorKey);
+        return verificationLinkRepository.save(link);
+    }
+
     //----------------------------------------------------------------------------------
 
-    public VerificationLink initVerification(UUID token) {
-        VerificationLink link = verificationLinkRepository.findByLinkToken(token)
+    public boolean settingVerificationLinkForVisitor(Long id, VerificationLinkSettingRequest request, String visitorKey) {
+        Optional<VerificationLink> optionalLink = verificationLinkRepository.findByIdAndFirstVisitorKey(id, visitorKey);
+        if (optionalLink.isEmpty()) return false;
+        VerificationLink link = optionalLink.get();
+        settingVerificationLink(link.getId(), request);
+        return true;
+    }
+
+    public Optional<VerificationLink> getMyVerificationLink(Long id, String visitorKey) {
+        return verificationLinkRepository.findByIdAndFirstVisitorKey(id, visitorKey);
+    }
+
+    //----------------------------------------------------------------------------------
+
+    public VerificationLink initVerification(UUID linkToken, String visitorKey) {
+        VerificationLink link = verificationLinkRepository.findByLinkToken(linkToken)
                 .orElseThrow(() -> new EntityNotFoundException("유효하지 않은 인증 링크입니다."));
 
-        if (isExpiredOrCompleted(link.getStatus())) {
+        System.out.println("linkToken: " + linkToken + ", firstVisitorKey: " + link.getFirstVisitorKey() + ", visitorKey: " + visitorKey);
+
+        if (isExpiredOrCompleted(link.getStatus()) && !link.getFirstVisitorKey().equals(visitorKey)) {
             throw new IllegalStateException("이미 만료되었거나 완료된 인증입니다.");
         }
 
         if (link.getFirstAccessedAt() == null) {
             link.setFirstAccessedAt(LocalDateTime.now());
+            link.setFirstVisitorKey(visitorKey);  // 최초 방문자 키 저장
         }
 
         link.setStatus(VerificationLinkStatus.IN_PROGRESS);
+        link.setStartedAt(LocalDateTime.now());
         verificationLinkRepository.save(link);
 
         return link;
@@ -179,7 +203,7 @@ public class VerificationLinkService {
 
     private boolean isExpiredOrCompleted(VerificationLinkStatus status) {
         return switch (status) {
-            case EXPIRED, COMPLETED, IN_PROGRESS, TERMINATED-> true;
+            case EXPIRED, COMPLETED, TERMINATED-> true;
             default -> false;
         };
     }
@@ -188,5 +212,4 @@ public class VerificationLinkService {
         return verificationLinkRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("인증 링크를 찾을 수 없습니다."));
     }
-
 }

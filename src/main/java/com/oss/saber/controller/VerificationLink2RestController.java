@@ -18,34 +18,40 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api")
+@RequestMapping("/api/saber")
 @Tag(name = "인증 API (판매자측)", description = "")
 public class VerificationLink2RestController {
 
     private final VerificationLinkService verificationLinkService;
 
-    @GetMapping("/saber")
-    @Operation(summary = "판매자 측 인증 시작", description = "인증을 시작합니다.")
-    public ResponseEntity<VerificationLinkResponse.VerificationLinkSession> initVerification(@RequestParam("token") UUID token) {
-        VerificationLink link = verificationLinkService.initVerification(token);
+    @GetMapping
+    @Operation(summary = "판매자 측 인증 시작", description = "링크 클릭 시 인증 세션을 시작합니다.")
+    public ResponseEntity<VerificationLinkResponse.VerificationLinkSession> initVerification(@RequestParam("token") UUID linkToken, @RequestParam("visitorKey") String visitorKey) {
+        VerificationLink link = verificationLinkService.initVerification(linkToken, visitorKey);
+
+        List<VerificationResponse.infoResponse> verificationsResponse = link.getVerifications().stream()
+                .map(verification -> VerificationResponse.infoResponse.builder()
+                                .label(verification.getLabel()).build()).collect(Collectors.toList());
+
         VerificationLinkResponse.VerificationLinkSession response = VerificationLinkResponse.VerificationLinkSession.builder()
                 .id(link.getId())
                 .status(link.getStatus())
                 .productName(link.getProductName())
                 .expiresAt(link.getExpiresAt())
+                .requirementText(link.getRequirementText())
+                .verifications(verificationsResponse)
                 .build();
         return ResponseEntity.ok(response);
     }
 
-
-    @PostMapping("/verification/{verificationId}/agree")
+    @PostMapping("/link/{verificationLinkId}/agree")
     @Operation(summary = "동의 여부 제출", description = "")
-    public ResponseEntity<String> agreeToTerms(@PathVariable Long verificationId) {
-        verificationLinkService.agreeTerms(verificationId);
+    public ResponseEntity<String> agreeToTerms(@PathVariable Long verificationLinkId) {
+        verificationLinkService.agreeTerms(verificationLinkId);
         return ResponseEntity.ok("동의 완료");
     }
 
-    @GetMapping("/verification/{verificationLinkId}/info")
+    @GetMapping("/link/{verificationLinkId}/info")
     @Operation(summary = "인증 내용 조회", description = "인증에 대한 내용을 제공합니다.")
     public ResponseEntity<VerificationLinkResponse.toResponse> getVerificationLink(@PathVariable Long verificationLinkId) {
         VerificationLink link = verificationLinkService.getVerificationLink(verificationLinkId);
