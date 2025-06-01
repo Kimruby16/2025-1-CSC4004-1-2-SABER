@@ -1,213 +1,147 @@
-//9
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 20px;
-  background-color: #f7f7f7;
-  height: 100vh;
-  box-sizing: border-box;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 10px;
-`;
-
-const Logo = styled.div`
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  cursor: pointer;
-`;
-
-const MenuIcon = styled.div`
-  font-size: 20px;
-  color: #666;
-`;
-
-const ProgressBarContainer = styled.div`
-  width: 100%;
-  height: 8px;
-  background-color: #ddd;
-  margin: 10px 0 20px;
-  border-radius: 4px;
-`;
-
-const ProgressBar = styled.div`
-  height: 100%;
-  background-color: #4caf50;
-  width: 10%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-`;
-
-const Title = styled.h2`
-  font-size: 18px;
-  font-weight: bold;
-  margin: 20px 0;
-  color: #333;
-  align-self: flex-start;
-`;
-
-const MediaBox = styled.div`
-  width: 100%;
-  height: 200px;
-  background-color: #e0e0e0;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #999;
-  margin-bottom: 10px;
-`;
-
-const SlideIndicator = styled.div`
-  width: 40px;
-  height: 4px;
-  background-color: #ccc;
-  border-radius: 2px;
-  margin: 10px 0;
-`;
-
-const RequirementButton = styled.button`
-  background-color: #eee;
-  border: none;
-  border-radius: 6px;
-  padding: 10px;
-  font-size: 14px;
-  width: 100%;
-  margin-bottom: 30px;
-  cursor: pointer;
-`;
-
-const FeedbackContainer = styled.div`
-  width: 100%;
-  margin-bottom: 20px;
-`;
-
-const FeedbackLabel = styled.div`
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 10px;
-`;
-
-const EmojiButtons = styled.div`
-  display: flex;
-  gap: 12px;
-`;
-
-const EmojiButton = styled.button`
-  flex: 1;
-  padding: 12px;
-  background-color: ${(props) => (props.selected ? '#dfe9ff' : '#fff')};
-  border: 2px solid ${(props) => (props.selected ? '#5561c0' : '#ccc')};
-  border-radius: 10px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  color: ${(props) => (props.selected ? '#5561c0' : '#333')};
-  font-weight: ${(props) => (props.selected ? 'bold' : 'normal')};
-`;
-
-const DoneButton = styled.button`
-  margin-top: 40px;
-  background-color: transparent;
-  border: 1px solid #aaa;
-  color: #666;
-  padding: 10px 24px;
-  border-radius: 20px;
-  font-size: 14px;
-  cursor: pointer;
-`;
+import {useLocation, useNavigate} from 'react-router-dom';
+import '../css/Buyers.css';
+import logoImage from '../assets/logo.png';
 
 function ResultScreen() {
-  const navigate = useNavigate();
-  const [selectedFeedback, setSelectedFeedback] = useState(null);
+    const navigate = useNavigate();
 
-  const goToHome = () => {
-    navigate('/');
-  };
+    const [verificationIds, setVerificationIds] = useState([]);
+    const [currentVerificationId, setCurrentVerificationId] = useState(null);  // 사진 보여줄 verification ID
+    const [photoUrl, setPhotoUrl] = useState(null);
+    const [loadingPhoto, setLoadingPhoto] = useState(false);
+    const [photoError, setPhotoError] = useState(null);
+    const [selectedFeedback, setSelectedFeedback] = useState(null);
 
-  const handleDone = () => {
-    console.log('선택된 피드백:', selectedFeedback);
-    navigate('/end');
-  };
+    const verificationLinkId = localStorage.getItem("sessionId");
 
-  // ✅ 캡처/녹화 감지
-  useEffect(() => {
-  const handleSecurityRisk = () => {
-    navigate('/capture-warning');
-  };
+    useEffect(() => {
+        if (!verificationLinkId) return;
 
-  const handleVisibilityChange = () => {
-    if (document.visibilityState === 'hidden') {
-      handleSecurityRisk();
-    }
-  };
+        // 2. verificationLinkId로 verification ID 목록 받아오기
+        const fetchVerificationIds = async () => {
+            try {
+                const res = await fetch(`http://localhost:8080/api/saber/link/${verificationLinkId}/verification-ids`);
+                if (!res.ok) throw new Error('인증 ID 목록을 불러오지 못했습니다.');
+                const ids = await res.json();
+                setVerificationIds(ids);
 
-  const handleBlur = () => {
-    handleSecurityRisk();
-  };
+                if (ids.length > 0) {
+                    setCurrentVerificationId(ids[0]);  // 예: 첫 번째 ID로 사진 표시
+                }
+            } catch (error) {
+                console.error(error.message);
+            }
+        };
 
-  window.addEventListener('blur', handleBlur);
-  document.addEventListener('visibilitychange', handleVisibilityChange);
+        fetchVerificationIds();
+    }, [verificationLinkId]);
 
-  return () => {
-    window.removeEventListener('blur', handleBlur);
-    document.removeEventListener('visibilitychange', handleVisibilityChange);
-  };
-}, [navigate]);
+    useEffect(() => {
+        if (!currentVerificationId) {
+            setPhotoUrl(null);
+            return;
+        }
 
-  return (
-    <Container>
-      <Header>
-        <Logo onClick={goToHome}>SABER</Logo>
-        <MenuIcon>☰</MenuIcon>
-      </Header>
+        // 3. 현재 verificationId로 사진 URL 받아오기
+        const fetchPhotoUrl = async () => {
+            setLoadingPhoto(true);
+            setPhotoError(null);
+            try {
+                const response = await fetch(`http://localhost:8080/api/verifications/${currentVerificationId}/photo`);
+                if (!response.ok) throw new Error('사진을 불러오지 못했습니다.');
+                const url = await response.text();
+                setPhotoUrl(url);
+            } catch (error) {
+                setPhotoError(error.message);
+            } finally {
+                setLoadingPhoto(false);
+            }
+        };
 
-      <ProgressBarContainer>
-        <ProgressBar />
-      </ProgressBarContainer>
+        fetchPhotoUrl();
+    }, [currentVerificationId]);
 
-      <Title>인증 결과 확인</Title>
+    const goToHome = () => {
+        navigate('/');
+    };
 
-      <MediaBox>사진/동영상</MediaBox>
-      <SlideIndicator />
+    const handleDone = () => {
+        console.log('선택된 피드백:', selectedFeedback);
+        navigate('/end');
+    };
 
-      <RequirementButton>인증 요구사항</RequirementButton>
+    return (
+        <div className="container">
+            <div className="header-small">
+                <div className="logo-with-text" onClick={goToHome}>
+                    <img src={logoImage} alt="SABER Logo" className="logo-image" />
+                    <div className="logo-text">SABER</div>
+                </div>
+                <div className="menu-icon-small">☰</div>
+            </div>
 
-      <FeedbackContainer>
-        <FeedbackLabel>항목 인증 만족도</FeedbackLabel>
-        <EmojiButtons>
-          <EmojiButton
-            selected={selectedFeedback === 'satisfied'}
-            onClick={() => setSelectedFeedback('satisfied')}
-          >
-            😊 만족
-          </EmojiButton>
-          <EmojiButton
-            selected={selectedFeedback === 'unsatisfied'}
-            onClick={() => setSelectedFeedback('unsatisfied')}
-          >
-            😕 불만족
-          </EmojiButton>
-        </EmojiButtons>
-      </FeedbackContainer>
+            <div className="progress-bar-container">
+                <div className="progress-bar-100" />
+            </div>
 
-      <DoneButton onClick={handleDone}>완료</DoneButton>
-    </Container>
-  );
+            <h2 className="title-small">인증 결과 확인</h2>
+
+            {/* 인증 ID 목록 버튼 */}
+            <div className="verification-id-list" style={{ marginBottom: '1rem' }}>
+                <div style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>인증 ID 선택</div>
+                {verificationIds.length === 0 && <p>인증 ID가 없습니다.</p>}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {verificationIds.map(id => (
+                        <button
+                            key={id}
+                            onClick={() => setCurrentVerificationId(id)}
+                            className={`verification-id-button ${currentVerificationId === id ? 'selected' : ''}`}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                borderRadius: '4px',
+                                border: currentVerificationId === id ? '2px solid #007bff' : '1px solid #ccc',
+                                backgroundColor: currentVerificationId === id ? '#cce5ff' : '#fff',
+                                cursor: 'pointer',
+                                userSelect: 'none'
+                            }}
+                        >
+                            {id}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="media-box">
+                {loadingPhoto && <p>사진 불러오는 중...</p>}
+                {photoError && <p style={{ color: 'red' }}>{photoError}</p>}
+                {photoUrl && <img src={photoUrl} alt="Verification" style={{ maxWidth: '100%', maxHeight: 150 }} />}
+                {!loadingPhoto && !photoUrl && !photoError && <p>사진이 없습니다.</p>}
+            </div>
+
+            <div className="slide-indicator" />
+
+            <div className="feedback-container">
+                <div className="feedback-label">항목 인증 만족도</div>
+                <div className="emoji-buttons">
+                    <button
+                        className={`emoji-button ${selectedFeedback === 'satisfied' ? 'selected' : ''}`}
+                        onClick={() => setSelectedFeedback('satisfied')}
+                    >
+                        😊 만족
+                    </button>
+                    <button
+                        className={`emoji-button ${selectedFeedback === 'unsatisfied' ? 'selected' : ''}`}
+                        onClick={() => setSelectedFeedback('unsatisfied')}
+                    >
+                        😕 불만족
+                    </button>
+                </div>
+            </div>
+
+            <button className="button" onClick={handleDone}>완료</button>
+        </div>
+    );
 }
 
 export default ResultScreen;

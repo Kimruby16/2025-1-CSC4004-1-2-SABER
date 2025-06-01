@@ -1,189 +1,81 @@
-//7
-import React from 'react';
-import styled from 'styled-components';
-import { useNavigate } from 'react-router-dom';
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 30px 20px;
-  background-color: #f7f7f7;
-  height: 100vh;
-  box-sizing: border-box;
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  margin-bottom: 20px;
-`;
-
-const Logo = styled.div`
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
-  cursor: pointer;
-`;
-
-const MenuIcon = styled.div`
-  font-size: 20px;
-  color: #666;
-`;
-
-const ProgressBarContainer = styled.div`
-  width: 100%;
-  height: 8px;
-  background-color: #ddd;
-  margin: 10px 0 20px;
-  border-radius: 4px;
-`;
-
-const ProgressBar = styled.div`
-  height: 100%;
-  background-color: #4caf50;
-  width: 40%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-`;
-
-const BuyerInfo = styled.div`
-  display: flex;
-  align-items: center;
-  margin: 30px 0 10px;
-  width: 100%;
-`;
-
-const ProfilePlaceholder = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: #ddd;
-  margin-right: 10px;
-`;
-
-const BuyerText = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const BuyerTitle = styled.div`
-  font-weight: bold;
-  font-size: 15px;
-`;
-
-const BuyerSubtitle = styled.div`
-  font-size: 12px;
-  color: #999;
-`;
-
-const Title = styled.h2`
-  font-size: 22px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 10px;
-  text-align: center;
-`;
-
-const SubTitle = styled.p`
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 30px;
-  text-align: center;
-`;
-
-const LinkContainer = styled.div`
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 15px;
-  margin-bottom: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  box-sizing: border-box;
-`;
-
-const LinkText = styled.p`
-  font-size: 14px;
-  color: #555;
-  margin-right: 10px;
-  overflow-wrap: break-word;
-`;
-
-const CopyIcon = styled.div`
-  font-size: 20px;
-  color: #666;
-  cursor: pointer;
-`;
-
-const WaitingButton = styled.div`
-  background-color: #fff;
-  border: 1px solid #333;
-  color: #333;
-  padding: 15px 30px;
-  border-radius: 10px;
-  font-size: 16px;
-  text-align: center;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: auto;
-`;
+// WaitingScreen.jsx
+import React, { useEffect } from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import axios from 'axios';
+import '../css/Buyers.css';
+import logoImage from '../assets/logo.png';
 
 function WaitingScreen() {
-  const navigate = useNavigate();
-  const verificationLink = `${window.location.origin}/seller/start`;
+    const navigate = useNavigate();
+    const verificationLinkId = localStorage.getItem("sessionId");
 
-  const handleCopyClick = () => {
-    navigator.clipboard.writeText(verificationLink);
-    alert('링크가 복사되었습니다.');
-  };
+    useEffect(() => {
+    const checkStatus = async () => {
+        try {
+            const response = await axios.get(`http://localhost:8080/api/link/${verificationLinkId}`);
+            const status = response.data.status;
 
-  const goToHome = () => {
-    navigate('/');
-  };
+            if (status === 'COMPLETED') {
+                navigate('/buyer/complete', { state: { verificationLinkId } });
+            }
+        } catch (error) {
+            console.error('상태 조회 실패:', error);
+        }
+    };
 
-  const Next = () => {
-    navigate('/buyer/complete');
-  };
+    // 컴포넌트가 마운트되면 즉시 호출
+    checkStatus();
 
-  return (
-    <Container>
-      <Header>
-        <Logo onClick={goToHome}>SABER</Logo>
-        <MenuIcon>☰</MenuIcon>
-      </Header>
+    // 5초마다 상태 체크
+    const intervalId = setInterval(checkStatus, 5000);
 
-      <ProgressBarContainer>
-        <ProgressBar />
-      </ProgressBarContainer>
+    // 컴포넌트 언마운트 시 interval 정리
+    return () => clearInterval(intervalId);
+}, [verificationLinkId, navigate]);
 
-      <BuyerInfo>
-        <ProfilePlaceholder />
-        <BuyerText>
-          <BuyerTitle>구매자</BuyerTitle>
-          <BuyerSubtitle>구매자용 중고거래 실물인증 서비스</BuyerSubtitle>
-        </BuyerText>
-      </BuyerInfo>
+    const verificationLink = `${window.location.origin}/seller/start`;
 
-      <Title>판매자 인증 진행중</Title>
-      <SubTitle>잠시만 기다려주세요</SubTitle>
+    const handleCopyClick = () => {
+        navigator.clipboard.writeText(verificationLink);
+        alert('링크가 복사되었습니다.');
+    };
 
-      <LinkContainer>
-        <LinkText>{verificationLink}</LinkText>
-        <CopyIcon onClick={handleCopyClick}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
-            <path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8v-2h11v2zm0-4H8v-2h11v2zm0-4H8V7h11v2z"/>
-          </svg>
-        </CopyIcon>
-      </LinkContainer>
+    const goToHome = () => {
+        navigate('/');
+    };
 
-      <WaitingButton onClick={Next}>판매자가 인증을 진행하고 있습니다</WaitingButton>
-    </Container>
-  );
+    const Next = () => {
+        navigate('/buyer/complete');
+    };
+
+    return (
+        <div className="container">
+            <div className="header-medium">
+                <div className="logo-with-text" onClick={goToHome}>
+                    <img src={logoImage} alt="SABER Logo" className="logo-image" />
+                    <div className="logo-text">SABER</div>
+                </div>
+                <div className="menu-icon-small">☰</div>
+            </div>
+
+            <div className="progress-bar-container">
+                <div className="progress-bar-67"></div>
+            </div>
+
+            <div className="buyer-info">
+                <div className="profile-placeholder"></div>
+                <div className="buyer-text">
+                    <div className="buyer-title">구매자</div>
+                    <div className="buyer-subtitle">구매자용 중고거래 실물인증 서비스</div>
+                </div>
+            </div>
+
+            <h2 className="title-medium">판매자 인증 진행중</h2>
+            <p className="subtitle-small">잠시만 기다려주세요</p>
+
+            <div className="waiting-button" onClick={Next}>판매자가 인증을 진행하고 있습니다</div>
+        </div>
+    );
 }
 
 export default WaitingScreen;
